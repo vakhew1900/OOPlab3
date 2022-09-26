@@ -8,7 +8,10 @@ import java.util.stream.IntStream;
 
 public class URL {
 
-    private  String url;
+    private  String protocol = "";
+    private String host = "";
+    private  String path = "" ;
+    private  String fragment = "";
     private TypeOfURL typeOfURL;
 
     private static List<String> protocolList = Arrays.asList(new String[]{"http", "https", "ftp"}); // список протоколов
@@ -19,7 +22,7 @@ public class URL {
     /*--------------------- Конструкторы ------------------------------ */
     /** конструктор
      *
-     * @param url  URL-адрес
+     * @param url URL-адрес
      */
     public  URL(String url){
 
@@ -29,16 +32,45 @@ public class URL {
             throw  new URLNotCreatedException("String is not valid for url ");
         }
 
-        this.url = url;
+        List<String> urlAndFragment = Arrays.asList(url.split("#")); // отделяем путь от якоря
 
-        List<String> pathAndFragment = Arrays.asList(url.split("#")); // отделяем путь от фрагмента
-        if(isFile(pathAndFragment.get(0))){ //   путь указывает на файл
+        if (urlAndFragment.size() == 2) this.fragment = urlAndFragment.get(1); // если якорь присутствует, то присвоить якоря объекта значение этого якоря
+
+        List<String> protocolAndPath = Arrays.asList(urlAndFragment.get(0).split("://"));
+
+        if (protocolAndPath.size()> 2){
+            this.protocol = protocolAndPath.get(0);
+            protocolAndPath.remove(0);
+        }
+
+        String hostAndPath = protocolAndPath.get(0);
+        int firstSlashIndex = hostAndPath.indexOf("/");
+
+        boolean isHost = false;
+        if(firstSlashIndex != -1) {
+            String host = hostAndPath.substring(0, firstSlashIndex - 1);
+            isHost = isValidHost(host);
+            if (isHost) this.host = host;
+        }
+
+        String path = "";
+        if(isHost){
+            if(firstSlashIndex + 1 <= hostAndPath.length() - 1)
+                path =  hostAndPath.substring(firstSlashIndex + 1, hostAndPath.length() - 1);
+        }
+        else{
+            path = hostAndPath;
+        }
+
+        this.path = path;
+
+        if(isFile(urlAndFragment.get(0))){ //   путь указывает на файл
             this.typeOfURL = TypeOfURL.FILE; // считать, что ссылка указывает на файл
         }
         else
         {
             this.typeOfURL = TypeOfURL.DIRECTORY; // считать, что ссылка указывает на каталог
-            if (url.endsWith("/") == false)  url += "/"; // добавить слэщ в конце url пути
+            if (path.endsWith("/") == false)  this.path += "/"; // добавить слэщ в конце url пути
         }
 
 
@@ -240,7 +272,7 @@ public class URL {
         }
 
         URL otherUrl = (URL) other;
-        return  this.url.equals(otherUrl.url);
+        return  this.path.equals(otherUrl.path);
     }
 
     /*------------------- Геттеры ------------------------------------ */
@@ -313,6 +345,13 @@ public class URL {
      */
     @Override
     public String toString(){
-        return  this.url;
+        String str = "";
+        if (protocol.isEmpty() == false) str += protocol + "://";
+        if (host.isEmpty() == false) str += host + "/";
+        if (path.isEmpty() == false) str += path;
+        if (typeOfURL == TypeOfURL.DIRECTORY && path.isEmpty() == false) str+= "/";
+        if (fragment.isEmpty() == false) str+= "#" + fragment;
+
+        return str;
     }
 }
