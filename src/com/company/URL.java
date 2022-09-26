@@ -8,11 +8,11 @@ import java.util.stream.IntStream;
 
 public class URL {
 
-    private  String protocol = "";
+    private String protocol = "";
     private String host = "";
-    private  String path = "" ;
-    private  String fragment = "";
-    private TypeOfURL typeOfURL;
+    private String path = "";
+    private String fragment = "";
+    private  TypeOfURL typeOfURL;
 
     private static List<String> protocolList = Arrays.asList(new String[]{"http", "https", "ftp"}); // список протоколов
     private static List<String> extensionList = Arrays.asList(new String[]{"html", "php", "png", "txt",
@@ -272,7 +272,7 @@ public class URL {
         }
 
         URL otherUrl = (URL) other;
-        return  this.path.equals(otherUrl.path);
+        return  this.toString().equals(otherUrl.toString()); // сравниваем адреса
     }
 
     /*------------------- Геттеры ------------------------------------ */
@@ -307,7 +307,7 @@ public class URL {
      */
     public  URL calculateNewUrl(String relativeAddress){
 
-        if (this.typeOfURL == TypeOfURL.FILE){
+        if (this.typeOfURL == TypeOfURL.FILE || fragment.isEmpty() == false){
             throw new  URLNotCreatedException("Cannot create new URL");
         }
 
@@ -322,7 +322,25 @@ public class URL {
             tmpRelativeAddress = relativeAddress.substring(substrCount * "../".length() - 1);
         }
 
-        String newUrl = tmpRelativeAddress;
+        List<String> pathList = Arrays.asList(path.split("/"));
+
+        if(pathList.size() < substrCount){
+            throw  new URLNotCreatedException("Cannot create new URL, because can`t go upstairs");
+        }
+
+        String newPath = "";
+
+        for (int i = 0; i < pathList.size() - substrCount; i++){
+            newPath+= pathList.get(i) + "/";
+        }
+
+        newPath+= tmpRelativeAddress;
+
+        String newUrl = "";
+
+        if (protocol.isEmpty() == false) newUrl += protocol + "://";
+        if (host.isEmpty() == false) newUrl += host + "/";
+        newUrl+=newPath;
 
         return  new URL(newUrl);
     }
