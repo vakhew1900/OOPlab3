@@ -1,5 +1,6 @@
 package com.company;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -28,7 +29,7 @@ public class URL {
 
         boolean isValid = isValid(url);
 
-        if (isValid){
+        if (!isValid){
             throw  new URLNotCreatedException("String is not valid for url ");
         }
 
@@ -36,9 +37,9 @@ public class URL {
 
         if (urlAndFragment.size() == 2) this.fragment = urlAndFragment.get(1); // если якорь присутствует, то присвоить якоря объекта значение этого якоря
 
-        List<String> protocolAndPath = Arrays.asList(urlAndFragment.get(0).split("://"));
+        List<String> protocolAndPath = new ArrayList<>(Arrays.asList(urlAndFragment.get(0).split("://")));
 
-        if (protocolAndPath.size()> 2){
+        if (protocolAndPath.size() == 2){
             this.protocol = protocolAndPath.get(0);
             protocolAndPath.remove(0);
         }
@@ -48,7 +49,7 @@ public class URL {
 
         boolean isHost = false;
         if(firstSlashIndex != -1) {
-            String host = hostAndPath.substring(0, firstSlashIndex - 1);
+            String host = hostAndPath.substring(0, firstSlashIndex);
             isHost = isValidHost(host);
             if (isHost) this.host = host;
         }
@@ -56,7 +57,7 @@ public class URL {
         String path = "";
         if(isHost){
             if(firstSlashIndex + 1 <= hostAndPath.length() - 1)
-                path =  hostAndPath.substring(firstSlashIndex + 1, hostAndPath.length() - 1);
+                path =  hostAndPath.substring(firstSlashIndex + 1, hostAndPath.length());
         }
         else{
             path = hostAndPath;
@@ -65,12 +66,12 @@ public class URL {
         this.path = path;
 
         if(isFile(urlAndFragment.get(0))){ //   путь указывает на файл
-            this.typeOfURL = TypeOfURL.FILE; // считать, что ссылка указывает на файл
+            this.typeOfURL = TypeOfURL.FILE; // считать, что ссhылка указывает на файл
         }
         else
         {
             this.typeOfURL = TypeOfURL.DIRECTORY; // считать, что ссылка указывает на каталог
-            if (path.endsWith("/") == false)  this.path += "/"; // добавить слэщ в конце url пути
+            if (!path.isEmpty() && !(path.endsWith("/")))  this.path += "/"; // добавить слэщ в конце url пути
         }
 
 
@@ -95,7 +96,7 @@ public class URL {
         }
 
         isValid = isValid && str.indexOf("://://") == -1; // если в строке встречается разделитель между протоколом и доменом два раза подряд, то считать, что строка не является url-адресом
-        List<String> protocolAndPath = Arrays.asList(urlAndFragment.get(0).split("://")); // разделить url на протокол и путь
+        List<String> protocolAndPath = new ArrayList<>(Arrays.asList(urlAndFragment.get(0).split("://"))); // разделить url на протокол и путь
         isValid = isValid && protocolAndPath.size() <= 2; // если количество разделителей между протоколом и url больше 1, то считать, что url не является строкой
 
         boolean isDomainRequired = false; // cчитать, что домен не обязателен
@@ -129,9 +130,11 @@ public class URL {
             path = path == null? pathList.get(i) : path + "/" + pathList.get(i);
         }
 
-        isValid = isValid && isValidSymbol(path, "./_-"); // если в  пути есть недопустимые символы, то считать, что строка не является url-адресом
-        isValid = isValid && path.indexOf("/../") == -1; // если есть   подъем вверх по иерахрии, то считать, что строка не является url
-        isValid = isValid && path.startsWith("../"); // если в начали пути есть подъем вверх по иерархии, то считать, что строка не является yrl
+        if(path != null) {
+            isValid = isValid && isValidSymbol(path, "./_-"); // если в  пути есть недопустимые символы, то считать, что строка не является url-адресом
+            isValid = isValid && path.indexOf("/../") == -1; // если есть   подъем вверх по иерахрии, то считать, что строка не является url
+            isValid = isValid && !(path.startsWith("../")); // если в начали пути есть подъем вверх по иерархии, то считать, что строка не является yrl
+        }
 
         return  isValid;
     }
@@ -193,6 +196,7 @@ public class URL {
             Pattern pattern = Pattern.compile(regex);
             Matcher matcher =pattern.matcher(str);
             isDomain = isDomain && matcher.matches(); // проверить соответствует ли доменное имя регулярному выражению
+            isDomain = isDomain || str.equals("localhost");
         }
         else {
             isDomain = true; // строка не является доменом
@@ -245,6 +249,9 @@ public class URL {
      * @return true - если валидная строка, иначе false
      */
     private static boolean isValidSymbol(String str, String additionalSymbols){
+
+        if(str == null || str.isEmpty())
+            return false;
 
         boolean isValid = true; // считать, что строка валидна
 
@@ -342,7 +349,12 @@ public class URL {
         if (host.isEmpty() == false) newUrl += host + "/";
         newUrl+=newPath;
 
-        return  new URL(newUrl);
+        try {
+            return new URL(newUrl);
+        }
+        catch (URLNotCreatedException e){
+            throw  new URLNotCreatedException(e.getMessage());
+        }
     }
 
     private   int substrCount(String str, String substr){
@@ -367,7 +379,6 @@ public class URL {
         if (protocol.isEmpty() == false) str += protocol + "://";
         if (host.isEmpty() == false) str += host + "/";
         if (path.isEmpty() == false) str += path;
-        if (typeOfURL == TypeOfURL.DIRECTORY && path.isEmpty() == false) str+= "/";
         if (fragment.isEmpty() == false) str+= "#" + fragment;
 
         return str;
