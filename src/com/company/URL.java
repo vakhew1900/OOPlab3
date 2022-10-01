@@ -16,8 +16,6 @@ public class URL {
     private  TypeOfURL typeOfURL;
 
     private static List<String> protocolList = Arrays.asList(new String[]{"http", "https", "ftp"}); // список протоколов
-    private static List<String> extensionList = Arrays.asList(new String[]{"html", "php", "png", "txt",
-                                                "docx", "doc", "htm"});
     private static List<String > topLevelDomainList = Arrays.asList(new String[]{"com", "edu", "ru", "org", "net", "mil"});
 
     /*--------------------- Конструкторы ------------------------------ */
@@ -34,9 +32,7 @@ public class URL {
         }
 
         List<String> urlAndFragment = Arrays.asList(url.split("#")); // отделяем путь от якоря
-
         if (urlAndFragment.size() == 2) this.fragment = urlAndFragment.get(1); // если якорь присутствует, то присвоить якоря объекта значение этого якоря
-
         List<String> protocolAndPath = new ArrayList<>(Arrays.asList(urlAndFragment.get(0).split("://")));
 
         if (protocolAndPath.size() == 2){
@@ -47,26 +43,28 @@ public class URL {
         String hostAndPath = protocolAndPath.get(0);
         int firstSlashIndex = hostAndPath.indexOf("/");
 
-        boolean isHost = false;
+        //boolean isHost = false;
         if(firstSlashIndex != -1) {
-            String host = hostAndPath.substring(0, firstSlashIndex);
-            isHost = isValidHost(host);
-            if (isHost) this.host = host;
+
+            if(isValidHost(hostAndPath.substring(0, firstSlashIndex)))
+                this.host = hostAndPath.substring(0, firstSlashIndex);
+        }
+        else {
+            if(isValidHost(hostAndPath))
+                this.host = hostAndPath;
         }
 
         String path = "";
-        if(isHost){
-            if(firstSlashIndex + 1 <= hostAndPath.length() - 1)
+        if(!host.isEmpty()){
+            if(firstSlashIndex + 1 <= hostAndPath.length() - 1 && firstSlashIndex != -1)
                 path =  hostAndPath.substring(firstSlashIndex + 1, hostAndPath.length());
-        }
-        else{
+        }else {
             path = hostAndPath;
         }
 
         this.path = path;
-
-        if(isFile(urlAndFragment.get(0))){ //   путь указывает на файл
-            this.typeOfURL = TypeOfURL.FILE; // считать, что ссhылка указывает на файл
+        if(isFile(path)){ //   путь указывает на файл
+            this.typeOfURL = TypeOfURL.FILE; // считать, что ссылка указывает на файл
         }
         else
         {
@@ -74,6 +72,7 @@ public class URL {
             if (!path.isEmpty() && !(path.endsWith("/")))  this.path += "/"; // добавить слэщ в конце url пути
         }
 
+        System.out.println("protocol: " + protocol + "\n domain:" + host + "\n path:" + this.path);
 
     }
 
@@ -120,7 +119,6 @@ public class URL {
         }
 
         String path = null;
-
         if (isValidHost(pathList.get(0)) == false){ // первая строка не является доменом
             path = pathList.get(0); // добавить первую строку списка путей в строку пути
         }
@@ -131,19 +129,27 @@ public class URL {
         }
 
         if(path != null) {
-            isValid = isValid && isValidSymbol(path, "./_-"); // если в  пути есть недопустимые символы, то считать, что строка не является url-адресом
-            isValid = isValid && path.indexOf("/../") == -1; // если есть   подъем вверх по иерахрии, то считать, что строка не является url
-            isValid = isValid && !(path.startsWith("../")); // если в начали пути есть подъем вверх по иерархии, то считать, что строка не является yrl
+          isValid = isValid && isValidPath(path);
         }
 
         return  isValid;
     }
 
-    /*** проверка, является ли строка протоколом
-     *
-     * @param str строка
-     * @return true - если строка является протоколом, иначе false
-     */
+    private static boolean isValidPath(String str){
+
+        if (str == null) return false;
+
+        boolean isPath = isValidSymbol(str, "./_-");
+        str = "/" + str;
+
+        String regex = "/[.]*/";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(str);
+        isPath = isPath && !matcher.find();
+
+        return isPath;
+    }
+
     private static boolean isValidProtocol(String str)  {
 
         boolean isProtocol = false; // считать, что строка не является протоколом
@@ -232,13 +238,9 @@ public class URL {
      * @return true- если URL-адрес указывает на файл, false - если указывает на директорию
      */
     private static  boolean isFile(String str){
-
-
+        System.out.println(str);
         boolean isFile = false; // считать, что строка не является файлом
-
-        for(String extension : extensionList){ // для всех протоколов
-            isFile = isFile || str.endsWith("." + extension); // если строка заканчивается расширением, то считать, что строка является файлом
-        }
+        isFile = str.matches("[\\w/\\.]+\\.[\\w]+"); // если строка  имеет  точку и расширение, то считать, что строка является файлом
 
         return isFile;
     }
@@ -282,7 +284,7 @@ public class URL {
         return  this.toString().equals(otherUrl.toString()); // сравниваем адреса
     }
 
-    /*------------------- Геттеры ------------------------------------ */
+    /*------------------------ Геттеры ------------------------------------ */
 
     /** возвращает на что указывает ссылка
      *
@@ -293,19 +295,6 @@ public class URL {
     }
 
     /*------------------- Операции вычисления адресов ------------------*/
-
-    /*** вычислить относительнный адрес
-     * @param relativeAddress относительный адрес для строки
-     * @return новый url-адрес
-     */
-    public URL calculateRelativeAddress(String relativeAddress){ return  new URL("заглушка");}
-
-    /*** вычислить абсолютный адрес
-     * @param relativeAddress относительный адрес для строки
-     * @return  новый url-адрес
-     */
-    public  URL calculateAbsoluteAddress(String relativeAddress){return  new URL("заглушкша");}
-
 
     /** вычислить новый url-адрес
      *
