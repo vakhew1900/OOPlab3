@@ -17,8 +17,10 @@ public class Main {
             }
 
             try {
+//                String str2 = sc.next();
                 URL url = new URL(str);
-//                System.out.println("ddd :" + str);
+                /*URL url2 = url.calculateNewUrl(str2);
+//                System.out.println("ddd :" + str);*/
                 System.out.println(url.toString());
             }
             catch (URLNotCreatedException e){

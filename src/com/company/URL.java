@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class URL {
@@ -87,14 +88,18 @@ public class URL {
         boolean isValid = true; // считать, что строка является валидной
 
         isValid = isValid && str.indexOf("##") == -1; // если в строке стоять две # подряд, то считать, что строка не является url-адресом
+        isValid = isValid && str.startsWith("#") == false; // если строка является якорем, то считать, что строка не является url- адресом
         List<String> urlAndFragment = Arrays.asList(str.split("#")); // разделить строку на url и якорь
         isValid = isValid && urlAndFragment.size() <= 2; // если количество # в строке больше 1, считать, что строка не является url-адресом
 
-        if (urlAndFragment.size() == 2){ // якорь есть в url
-            isValid = isValid && isValidSymbol(urlAndFragment.get(1), "._-"); // если в якоре есть недопустимые символы, то считать, что строка не является url-адресом
+        if (urlAndFragment.size()== 2){ // якорь есть в url
+            isValid = isValid && isValidFragment(urlAndFragment.get(2)); // если вторая строка-якорь не является якорем , то считать, что строка не является url-адресов
         }
 
         isValid = isValid && str.indexOf("://://") == -1; // если в строке встречается разделитель между протоколом и доменом два раза подряд, то считать, что строка не является url-адресом
+
+        if(urlAndFragment.get(0).endsWith("://")) isValid = false; // если строка заканчивается разделителем между протоколом и доменом, считать, что строка не является протоколом
+        if(urlAndFragment.get(0).endsWith("/."))  isValid = false; // если строка заканчивается путем до каталога с именем /., то считать, что строка не является протоколом
         List<String> protocolAndPath = new ArrayList<>(Arrays.asList(urlAndFragment.get(0).split("://"))); // разделить url на протокол и путь
         isValid = isValid && protocolAndPath.size() <= 2; // если количество разделителей между протоколом и url больше 1, то считать, что url не является строкой
 
@@ -135,6 +140,11 @@ public class URL {
         return  isValid;
     }
 
+    /** Проверяет является ли строка путем
+     *
+     * @param str - строка
+     * @return true - если является, иначе false
+     */
     private static boolean isValidPath(String str){
 
         if (str == null) return false;
@@ -150,6 +160,11 @@ public class URL {
         return isPath;
     }
 
+    /** проверяет, является ли строка подстрокой
+     *
+     * @param str - строка
+     * @return true - если является, иначе false
+     */
     private static boolean isValidProtocol(String str)  {
 
         boolean isProtocol = false; // считать, что строка не является протоколом
@@ -245,6 +260,21 @@ public class URL {
         return isFile;
     }
 
+
+    /** проверяет, является ли строка якорем
+     *
+     * @param str - строка
+     * @return true - если является, иначе false
+     */
+    private static boolean isValidFragment(String str)  {
+
+        boolean isFragment = true; // считать, что строка не является якорем
+        if(str == null || str.isEmpty()) isFragment = false; // если строка пустая, то считать, что строка не является якорем
+        isFragment = isFragment && isValidSymbol(str, "._-"); // если строка содержит недопустимые символы,то считать, что строка не является фрагментом
+
+        return isFragment;
+    }
+
     /** проверка, является ли строка валидной для url- адреса
      * @param  str - строка, которую проверяют
      * @param  additionalSymbols - дополнительные символы, допустимые в строке
@@ -303,22 +333,29 @@ public class URL {
      */
     public  URL calculateNewUrl(String relativeAddress){
 
-        if (this.typeOfURL == TypeOfURL.FILE || fragment.isEmpty() == false){
+        if (this.typeOfURL == TypeOfURL.FILE){
             throw new  URLNotCreatedException("Cannot create new URL");
         }
 
-        int substrCount = substrCount(relativeAddress, "../"); // находим количество вхождений пдъема наверх по иерархии в url.
+        int substrCount = substrCount(relativeAddress, "/../"); // находим количество вхождений пдъема наверх по иерархии в url.
+        if (relativeAddress.startsWith("../")) substrCount++;
 
         String tmpRelativeAddress = null;
-        if (substrCount == 0 && relativeAddress.endsWith("/")){
-            tmpRelativeAddress = relativeAddress.substring(1);
+        int startPosition = 0;
+        if (substrCount == 0 && relativeAddress.startsWith("/")){
+            startPosition++;
+        }
+        if(substrCount == 0){
+            tmpRelativeAddress = relativeAddress.substring(startPosition);
         }
 
         if (substrCount > 0){
-            tmpRelativeAddress = relativeAddress.substring(substrCount * "../".length() - 1);
+            tmpRelativeAddress = relativeAddress.substring(substrCount * "../".length());
         }
 
-        List<String> pathList = Arrays.asList(path.split("/"));
+
+        List<String> pathList = Arrays.asList(path.split("/"))
+                    .stream().filter(s->s.isEmpty() == false).collect(Collectors.toList());
 
         if(pathList.size() < substrCount){
             throw  new URLNotCreatedException("Cannot create new URL, because can`t go upstairs");
@@ -346,6 +383,12 @@ public class URL {
         }
     }
 
+    /** определить количество вхождений подстроки в строке
+     *
+     * @param str - строка, в которой мы ищем подстроку
+     * @param substr - подстрока
+     * @return количество подстрок в строке
+     */
     private   int substrCount(String str, String substr){
 
         int count = (int) IntStream.iterate(
