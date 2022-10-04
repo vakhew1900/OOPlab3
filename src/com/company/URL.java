@@ -88,24 +88,25 @@ public class URL {
         boolean isValid = true; // считать, что строка является валидной
 
         isValid = isValid && str.indexOf("##") == -1; // если в строке стоять две # подряд, то считать, что строка не является url-адресом
-        isValid = isValid && str.startsWith("#") == false; // если строка является якорем, то считать, что строка не является url- адресом
+        isValid = isValid && str.startsWith("#") == false  && str.endsWith("#") == false; // если строка начинается или оканчивается #, то считать, что строка не является url- адресом
         List<String> urlAndFragment = Arrays.asList(str.split("#")); // разделить строку на url и якорь
         isValid = isValid && urlAndFragment.size() <= 2; // если количество # в строке больше 1, считать, что строка не является url-адресом
 
         if (urlAndFragment.size()== 2){ // якорь есть в url
-            isValid = isValid && isValidFragment(urlAndFragment.get(2)); // если вторая строка-якорь не является якорем , то считать, что строка не является url-адресов
+            isValid = isValid && isValidFragment(urlAndFragment.get(1)); // если вторая строка-якорь не является якорем , то считать, что строка не является url-адресов
         }
 
         isValid = isValid && str.indexOf("://://") == -1; // если в строке встречается разделитель между протоколом и доменом два раза подряд, то считать, что строка не является url-адресом
 
         if(urlAndFragment.get(0).endsWith("://")) isValid = false; // если строка заканчивается разделителем между протоколом и доменом, считать, что строка не является протоколом
-        if(urlAndFragment.get(0).endsWith("/."))  isValid = false; // если строка заканчивается путем до каталога с именем /., то считать, что строка не является протоколом
+//        if(urlAndFragment.get(0).endsWith("/."))  isValid = false; // если строка заканчивается путем до каталога с именем /., то считать, что строка не является протоколом
         List<String> protocolAndPath = new ArrayList<>(Arrays.asList(urlAndFragment.get(0).split("://"))); // разделить url на протокол и путь
         isValid = isValid && protocolAndPath.size() <= 2; // если количество разделителей между протоколом и url больше 1, то считать, что url не является строкой
 
         boolean isDomainRequired = false; // cчитать, что домен не обязателен
         if (protocolAndPath.size() == 2){ // присутствует разделитель между протоколом и путем
             isValid = isValid && isValidProtocol(protocolAndPath.get(0)); // если первая строка списка не является протоколом, то считать, что строка не является url
+//            if(protocolAndPath.get(1).startsWith("/"))  isValid = false;
             protocolAndPath.remove(0); // удалить строку-протокол из списка
             isDomainRequired = true; // считать, что протокол обязателен.
         }
@@ -152,10 +153,14 @@ public class URL {
         boolean isPath = isValidSymbol(str, "./_-");
         str = "/" + str;
 
-        String regex = "/[.]*/";
-        Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.matcher(str);
-        isPath = isPath && !matcher.find();
+        List<String> regexList = Arrays.asList(new String[]{"/[\\.]+/", "(^[\\.]+/)|(/[\\.]+$)"});
+
+        for (String regex : regexList){
+            Pattern pattern = Pattern.compile(regex);
+            Matcher matcher = pattern.matcher(str);
+            isPath = isPath && !matcher.find();
+        };
+
 
         return isPath;
     }
@@ -182,6 +187,8 @@ public class URL {
      * @return true - если строка является доменом, иначе false
      */
     private static boolean isValidHost(String str){
+        if(str == null || str.isEmpty())
+            return  false;
 
         List<String>  domainArr = Arrays.asList(str.split(":"));
         String domain = domainArr.get(0); // считать, что строка является доменным именем
@@ -353,7 +360,7 @@ public class URL {
             tmpRelativeAddress = relativeAddress.substring(substrCount * "../".length());
         }
 
-
+        if(isValid(tmpRelativeAddress) == false) throw  new URLNotCreatedException("Cannot create new URL");
         List<String> pathList = Arrays.asList(path.split("/"))
                     .stream().filter(s->s.isEmpty() == false).collect(Collectors.toList());
 
