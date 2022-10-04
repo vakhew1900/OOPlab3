@@ -63,7 +63,9 @@ public class URL {
             path = hostAndPath;
         }
 
+        if(path.startsWith("/")) path = path.substring(1);
         this.path = path;
+
         if(isFile(path)){ //   путь указывает на файл
             this.typeOfURL = TypeOfURL.FILE; // считать, что ссылка указывает на файл
         }
@@ -85,8 +87,11 @@ public class URL {
      */
     public  static  boolean isValid(String str) {
 
-        boolean isValid = true; // считать, что строка является валидной
+        if(str == null || str.isEmpty()){
+            return false;
+        }
 
+        boolean isValid = true; // считать, что строка является валидной
         isValid = isValid && str.indexOf("##") == -1; // если в строке стоять две # подряд, то считать, что строка не является url-адресом
         isValid = isValid && str.startsWith("#") == false  && str.endsWith("#") == false; // если строка начинается или оканчивается #, то считать, что строка не является url- адресом
         List<String> urlAndFragment = Arrays.asList(str.split("#")); // разделить строку на url и якорь
@@ -99,14 +104,12 @@ public class URL {
         isValid = isValid && str.indexOf("://://") == -1; // если в строке встречается разделитель между протоколом и доменом два раза подряд, то считать, что строка не является url-адресом
 
         if(urlAndFragment.get(0).endsWith("://")) isValid = false; // если строка заканчивается разделителем между протоколом и доменом, считать, что строка не является протоколом
-//        if(urlAndFragment.get(0).endsWith("/."))  isValid = false; // если строка заканчивается путем до каталога с именем /., то считать, что строка не является протоколом
         List<String> protocolAndPath = new ArrayList<>(Arrays.asList(urlAndFragment.get(0).split("://"))); // разделить url на протокол и путь
         isValid = isValid && protocolAndPath.size() <= 2; // если количество разделителей между протоколом и url больше 1, то считать, что url не является строкой
 
         boolean isDomainRequired = false; // cчитать, что домен не обязателен
         if (protocolAndPath.size() == 2){ // присутствует разделитель между протоколом и путем
             isValid = isValid && isValidProtocol(protocolAndPath.get(0)); // если первая строка списка не является протоколом, то считать, что строка не является url
-//            if(protocolAndPath.get(1).startsWith("/"))  isValid = false;
             protocolAndPath.remove(0); // удалить строку-протокол из списка
             isDomainRequired = true; // считать, что протокол обязателен.
         }
@@ -134,9 +137,7 @@ public class URL {
             path = path == null? pathList.get(i) : path + "/" + pathList.get(i);
         }
 
-        if(path != null) {
-          isValid = isValid && isValidPath(path);
-        }
+        if(path != null) isValid = isValid && isValidPath(path);
 
         return  isValid;
     }
@@ -313,12 +314,18 @@ public class URL {
     @Override
     public boolean equals(Object other){
 
-        if (other == null || getClass() != other.getClass()){ // other не является объектом класса URL
-            return  false;
-        }
 
+        if (other == null || getClass() != other.getClass()) // other не является объектом класса URL
+            return  false; // считать, что объекты не равны
+
+        boolean isEqual = true;
         URL otherUrl = (URL) other;
-        return  this.toString().equals(otherUrl.toString()); // сравниваем адреса
+        isEqual = isEqual && this.protocol.equals(otherUrl.protocol);
+        isEqual = isEqual && this.host.equals(otherUrl.host);
+        isEqual = isEqual && this.path.equals(otherUrl.path);
+        isEqual = isEqual && this.fragment.equals(otherUrl.fragment);
+
+        return isEqual;
     }
 
     /*------------------------ Геттеры ------------------------------------ */

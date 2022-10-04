@@ -146,7 +146,7 @@ class isValidTest {
     }
 
     @Test
-    public void URLNotContainspath(){
+    public void URLNotContainsPath(){
         List<String> urlList = Arrays.asList(new String[]{"http://www.example.com", "http://www.example.com/"});
 
         boolean expectedIsValid = true;
@@ -366,6 +366,36 @@ class isValidTest {
     @Test
     public void InvalidDomain(){
         String url = "http://.com/path/";
+
+        boolean expectedIsValid = false;
+        boolean isValid = URL.isValid(url);
+
+        Assert.assertEquals(expectedIsValid, isValid);
+    }
+
+    @Test
+    public void URLIsEmpty(){
+        String url = "";
+
+        boolean expectedIsValid = false;
+        boolean isValid = URL.isValid(url);
+
+        Assert.assertEquals(expectedIsValid, isValid);
+    }
+
+    @Test
+    public void URLIsNull(){
+        String url = null;
+
+        boolean expectedIsValid = false;
+        boolean isValid = URL.isValid(url);
+
+        Assert.assertEquals(expectedIsValid, isValid);
+    }
+
+    @Test
+    public void URLIsSpace(){
+        String url = " ";
 
         boolean expectedIsValid = false;
         boolean isValid = URL.isValid(url);
