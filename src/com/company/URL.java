@@ -26,7 +26,8 @@ public class URL {
      */
     public  URL(String url){
 
-        boolean isValid = isValid(url);
+        boolean isValid =
+                isValid(url);
 
         if (!isValid){
             throw  new URLNotCreatedException("String is not valid for url ");
@@ -75,7 +76,7 @@ public class URL {
             if (!path.isEmpty() && !(path.endsWith("/")))  this.path += "/"; // добавить слэщ в конце url пути
         }
 
-        System.out.println("protocol: " + protocol + "\n domain:" + host + "\n path:" + this.path);
+        System.out.println("protocol: " + protocol + "\n domain:" + host + "\n path:" + this.path + "fragment:" + this.fragment);
 
     }
 
@@ -93,12 +94,13 @@ public class URL {
 
         boolean isValid = true; // считать, что строка является валидной
         isValid = isValid && str.indexOf("##") == -1; // если в строке стоять две # подряд, то считать, что строка не является url-адресом
-        isValid = isValid && str.startsWith("#") == false  && str.endsWith("#") == false; // если строка начинается или оканчивается #, то считать, что строка не является url- адресом
+        isValid = isValid   && str.endsWith("#") == false; // если строка  оканчивается #, то считать, что строка не является url- адресом
         List<String> urlAndFragment = Arrays.asList(str.split("#")); // разделить строку на url и якорь
         isValid = isValid && urlAndFragment.size() <= 2; // если количество # в строке больше 1, считать, что строка не является url-адресом
 
         if (urlAndFragment.size()== 2){ // якорь есть в url
             isValid = isValid && isValidFragment(urlAndFragment.get(1)); // если вторая строка-якорь не является якорем , то считать, что строка не является url-адресов
+            isValid = isValid && urlAndFragment.get(0).isEmpty() == false;
         }
 
         isValid = isValid && str.indexOf("://://") == -1; // если в строке встречается разделитель между протоколом и доменом два раза подряд, то считать, что строка не является url-адресом
@@ -116,19 +118,17 @@ public class URL {
 
         isValid = isValid && protocolAndPath.get(0).indexOf("//") ==-1;  // если в строке стоять два / подряд, то считать, что строка не является url-адресом
         isValid = isValid && protocolAndPath.get(0).indexOf("::") ==-1; // если в строке стоять два # подряд, то считать, что строка не является url-адресом
-        isValid = isValid && protocolAndPath.get(0).isEmpty() == false; // если строка пустая, то считать, что строка не является url-адресом
+//        isValid = isValid && protocolAndPath.get(0).isEmpty() == false; // если строка пустая, то считать, что строка не является url-адресом
         List<String> pathList = Arrays.asList(protocolAndPath.get(0).split("/")); // разделить путь на список поддиректорий
 
         if (isDomainRequired){ // домен обязателен в записи
             isValid = isValid && isValidHost(pathList.get(0)); // если первая строка в списке пути не является доменом, считать, что строка не является url-адресом
         }
 
-        if (isValidHost(pathList.get(0)) == false && pathList.get(0).indexOf(":") != -1){ // первая строка в списке путей не является доменом, но есть разделитель для порта
-            isValid = false; // считать, что строка не является url-адресом
-        }
+
 
         String path = null;
-        if (isValidHost(pathList.get(0)) == false){ // первая строка не является доменом
+        if (pathList.size() > 0 && isValidHost(pathList.get(0)) == false){ // первая строка не является доменом
             path = pathList.get(0); // добавить первую строку списка путей в строку пути
         }
 
@@ -347,7 +347,7 @@ public class URL {
      */
     public  URL calculateNewUrl(String relativeAddress){
 
-        if (this.typeOfURL == TypeOfURL.FILE){
+        if (this.typeOfURL == TypeOfURL.FILE || relativeAddress == null){
             throw new  URLNotCreatedException("Cannot create new URL");
         }
 
@@ -367,7 +367,7 @@ public class URL {
             tmpRelativeAddress = relativeAddress.substring(substrCount * "../".length());
         }
 
-        if(isValid(tmpRelativeAddress) == false) throw  new URLNotCreatedException("Cannot create new URL");
+//        if(isValid(tmpRelativeAddress) == false) throw  new URLNotCreatedException("Cannot create new URL");
         List<String> pathList = Arrays.asList(path.split("/"))
                     .stream().filter(s->s.isEmpty() == false).collect(Collectors.toList());
 

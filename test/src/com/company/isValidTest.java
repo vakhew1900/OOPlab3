@@ -293,7 +293,7 @@ class isValidTest {
     }
 
     @Test
-    public void DirectoryContainsOnlyPouints(){
+    public void DirectoryContainsOnlyPoints(){
 
         List<String> urlList = Arrays.asList(new String[]{"http://www.example##.com/path/.", "http##://www.example.com/../", "http://www.example.com/.."});
 
@@ -313,7 +313,7 @@ class isValidTest {
     public void DirectoryContainsInvalidChar(){
 
         List<String> urlList = Arrays.asList(new String[]{"http://www.example.com/pat!h", "http://www.exampl!e.com/", "htt!p://www.example.com",
-                 "http://www.example.com/pat,h", "http://www.exampl,e.com/", "htt,p://www.exampl,e.com/path"});
+                 "http://www.example.com/pat,h", "http://www.exampl,e.com/", "htt,p://www.exampl,e.com/path", "www.example:.com", "www.exam.com/1:"});
 
         boolean expectedIsValid = false;
 
